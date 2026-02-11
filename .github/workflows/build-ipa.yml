@@ -1,0 +1,58 @@
+name: Build iOS Unsigned IPA
+
+on:
+  workflow_dispatch: # คำสั่งนี้จะสร้างปุ่มให้เรากดสั่ง Build เองได้
+
+jobs:
+  build-ios:
+    runs-on: macos-latest # สั่งเบิกตัวเครื่อง Mac ของ GitHub
+    defaults:
+      run:
+        working-directory: ./TranslateApp # บอกให้ทำงานในโฟลเดอร์แอปของเรา
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Generate iOS folder (Prebuild)
+        run: npx expo prebuild -p ios # ให้ระบบสร้างโค้ด Native iOS
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install
+
+      - name: Build Unsigned Archive
+        run: |
+          cd ios
+          xcodebuild -workspace TranslateApp.xcworkspace \
+            -scheme TranslateApp \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            clean build
+
+      - name: Package App into .ipa
+        run: |
+          cd ios/build/Build/Products/Release-iphoneos
+          mkdir Payload
+          mv TranslateApp.app Payload/
+          zip -r TranslateApp.ipa Payload # บีบอัดไฟล์ให้กลายเป็น .ipa
+
+      - name: Upload .ipa Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TranslateApp-IPA
+          # เส้นทางอัปโหลดไฟล์ให้เราดาวน์โหลด
+          path: TranslateApp/ios/build/Build/Products/Release-iphoneos/TranslateApp.ipa 
