@@ -1,58 +1,38 @@
-name: Build iOS Unsigned IPA
-
+name: Build iOS Unsigned
 on:
-  workflow_dispatch: # คำสั่งนี้จะสร้างปุ่มให้เรากดสั่ง Build เองได้
+  workflow_dispatch: # กดสั่งรันเองได้
 
 jobs:
-  build-ios:
-    runs-on: macos-latest # สั่งเบิกตัวเครื่อง Mac ของ GitHub
-    defaults:
-      run:
-        working-directory: ./TranslateApp # บอกให้ทำงานในโฟลเดอร์แอปของเรา
-
+  build:
+    runs-on: macos-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: 18
 
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Generate iOS folder (Prebuild)
-        run: npx expo prebuild -p ios # ให้ระบบสร้างโค้ด Native iOS
-
-      - name: Install CocoaPods
+      - name: Install dependencies
         run: |
-          cd ios
+          cd TranslateApp
+          npm install
+
+      - name: Install Pods
+        run: |
+          cd TranslateApp/ios
           pod install
 
-      - name: Build Unsigned Archive
+      - name: Build Xcode Project
         run: |
-          cd ios
+          cd TranslateApp/ios
           xcodebuild -workspace TranslateApp.xcworkspace \
-            -scheme TranslateApp \
-            -configuration Release \
-            -sdk iphoneos \
-            -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            clean build
-
-      - name: Package App into .ipa
-        run: |
-          cd ios/build/Build/Products/Release-iphoneos
-          mkdir Payload
-          mv TranslateApp.app Payload/
-          zip -r TranslateApp.ipa Payload # บีบอัดไฟล์ให้กลายเป็น .ipa
-
-      - name: Upload .ipa Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: TranslateApp-IPA
-          # เส้นทางอัปโหลดไฟล์ให้เราดาวน์โหลด
-          path: TranslateApp/ios/build/Build/Products/Release-iphoneos/TranslateApp.ipa 
+                     -scheme TranslateApp \
+                     -configuration Debug \
+                     -sdk iphoneos \
+                     CODE_SIGNING_ALLOWED=NO \
+                     CODE_SIGN_ING_REQUIRED=NO \
+                     CODE_SIGN_ENTITLEMENTS="" \
+                     CODE_SIGNING_METHOD=manual \
+                     clean build
