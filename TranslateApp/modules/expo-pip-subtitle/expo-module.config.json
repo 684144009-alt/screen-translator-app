@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android", "web"],
+  "apple": {
+    "modules": ["cd TranslateAppModule"]
+  },
+  "android": {
+    "modules": ["npx expo start --tunnel.cd TranslateAppModule"]
+  }
+}
